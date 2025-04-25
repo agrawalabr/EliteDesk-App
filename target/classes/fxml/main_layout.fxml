@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.elitedesk.MainLayoutController"
+            prefHeight="600.0" prefWidth="800.0">
+    <top>
+        <HBox alignment="CENTER" spacing="10" style="-fx-background-color: #f0f0f0; -fx-padding: 10px;">
+            <Button text="Available Spaces" fx:id="availableSpacesButton" 
+                    onAction="#showAvailableSpaces" 
+                    style="-fx-font-size: 14px; -fx-padding: 5px 15px;"/>
+            <Button text="My Reservations" fx:id="reservedSpacesButton" 
+                    onAction="#showReservedSpaces"
+                    style="-fx-font-size: 14px; -fx-padding: 5px 15px;"/>
+            <Button text="Logout" fx:id="logoutButton" 
+                    onAction="#handleLogout"
+                    style="-fx-font-size: 14px; -fx-padding: 5px 15px; -fx-background-color: #f44336; -fx-text-fill: white;"/>
+        </HBox>
+    </top>
+    <center>
+        <StackPane fx:id="contentArea">
+            <!-- Content will be loaded here -->
+        </StackPane>
+    </center>
+</BorderPane> 
