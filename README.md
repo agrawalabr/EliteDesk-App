@@ -1,1 +1,1 @@
-# ed-services
+# EliteDesk Frontend Services
