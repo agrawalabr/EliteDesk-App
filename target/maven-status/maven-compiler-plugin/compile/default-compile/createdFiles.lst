@@ -2,6 +2,7 @@ com/elitedesk/AuthService.class
 com/elitedesk/User.class
 com/elitedesk/service/SpaceService.class
 com/elitedesk/ReservedSpace.class
+com/elitedesk/service/SessionManager.class
 com/elitedesk/Space.class
 com/elitedesk/LoginController.class
 com/elitedesk/service/AuthService$LoginRequest.class

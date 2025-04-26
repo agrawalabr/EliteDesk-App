@@ -62,9 +62,13 @@
                     <mainClass>com.elitedesk.Main</mainClass>
                     <options>
                         <option>--add-modules</option>
-                        <option>javafx.controls,javafx.fxml,java.net.http</option>
+                        <option>javafx.controls,javafx.fxml,javafx.base,javafx.graphics,java.net.http</option>
                         <option>--add-opens</option>
                         <option>javafx.graphics/javafx.scene=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>javafx.controls/javafx.scene.control=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>javafx.base/javafx.beans=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>

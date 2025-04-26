@@ -8,6 +8,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 
 public class AuthService {
     private static final HttpClient client = HttpClient.newHttpClient();
@@ -45,20 +46,22 @@ public class AuthService {
                     .thenApply(response -> {
                         try {
                             if (response.statusCode() == 200) {
-                                LoginResponse loginResponse = objectMapper.readValue(response.body(),
-                                        LoginResponse.class);
-                                currentToken = loginResponse.getToken();
-                                currentUser = loginResponse.getUser();
-                                return loginResponse;
+                                Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+                                boolean success = (boolean) responseMap.get("success");
+                                String message = (String) responseMap.get("message");
+                                Map<String, Object> data = (Map<String, Object>) responseMap.get("data");
+
+                                return new LoginResponse(success, message, data, null);
                             } else {
-                                return new LoginResponse(null, null, "Invalid credentials");
+                                return new LoginResponse(false, null, null, "Invalid credentials");
                             }
                         } catch (Exception e) {
-                            return new LoginResponse(null, null, "Error processing login response");
+                            return new LoginResponse(false, null, null, "Error processing login response");
                         }
                     });
         } catch (Exception e) {
-            return CompletableFuture.completedFuture(new LoginResponse(null, null, "Error creating login request"));
+            return CompletableFuture
+                    .completedFuture(new LoginResponse(false, null, null, "Error creating login request"));
         }
     }
 
@@ -75,16 +78,23 @@ public class AuthService {
                     .thenApply(response -> {
                         try {
                             if (response.statusCode() == 201) {
-                                return objectMapper.readValue(response.body(), RegistrationResponse.class);
+                                Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+                                boolean success = (boolean) responseMap.get("success");
+                                String message = (String) responseMap.get("message");
+                                Map<String, Object> data = (Map<String, Object>) responseMap.get("data");
+
+                                return new RegistrationResponse(success, message, data, null);
                             } else {
-                                return new RegistrationResponse("Registration failed: " + response.body());
+                                return new RegistrationResponse(false, null, null, "Registration failed");
                             }
                         } catch (Exception e) {
-                            return new RegistrationResponse("Error processing registration response");
+                            return new RegistrationResponse(false, null, null,
+                                    "Error processing registration response");
                         }
                     });
         } catch (Exception e) {
-            return CompletableFuture.completedFuture(new RegistrationResponse("Error creating registration request"));
+            return CompletableFuture.completedFuture(
+                    new RegistrationResponse(false, null, null, "Error creating registration request"));
         }
     }
 
@@ -131,46 +141,62 @@ public class AuthService {
     }
 
     public static class LoginResponse {
-        private final String token;
-        private final User user;
-        private final String error;
+        private boolean success;
+        private String message;
+        private Map<String, Object> data;
+        private String error;
 
-        public LoginResponse(String token, User user, String error) {
-            this.token = token;
-            this.user = user;
+        public LoginResponse(boolean success, String message, Map<String, Object> data, String error) {
+            this.success = success;
+            this.message = message;
+            this.data = data;
             this.error = error;
         }
 
-        public String getToken() {
-            return token;
+        public boolean isSuccess() {
+            return success;
         }
 
-        public User getUser() {
-            return user;
+        public String getMessage() {
+            return message;
+        }
+
+        public Map<String, Object> getData() {
+            return data;
         }
 
         public String getError() {
             return error;
-        }
-
-        public boolean isSuccess() {
-            return token != null && error == null;
         }
     }
 
     public static class RegistrationResponse {
-        private final String error;
+        private boolean success;
+        private String message;
+        private Map<String, Object> data;
+        private String error;
 
-        public RegistrationResponse(String error) {
+        public RegistrationResponse(boolean success, String message, Map<String, Object> data, String error) {
+            this.success = success;
+            this.message = message;
+            this.data = data;
             this.error = error;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public Map<String, Object> getData() {
+            return data;
         }
 
         public String getError() {
             return error;
-        }
-
-        public boolean isSuccess() {
-            return error == null;
         }
     }
 }

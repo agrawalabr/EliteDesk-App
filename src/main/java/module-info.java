@@ -5,6 +5,8 @@ module com.elitedesk {
     requires com.fasterxml.jackson.databind;
 
     opens com.elitedesk to javafx.fxml;
+    opens com.elitedesk.service to com.fasterxml.jackson.databind;
+    opens com.elitedesk.model to com.fasterxml.jackson.databind;
 
     exports com.elitedesk;
 }

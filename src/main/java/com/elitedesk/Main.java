@@ -10,10 +10,10 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main_layout.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         Parent root = loader.load();
 
-        primaryStage.setTitle("EliteDesk - Workspace Management");
+        primaryStage.setTitle("EliteDesk - Login");
         primaryStage.setScene(new Scene(root, 800, 600));
         primaryStage.show();
     }

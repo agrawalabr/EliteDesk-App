@@ -1,35 +1,63 @@
 package com.elitedesk;
 
 import com.elitedesk.service.AuthService;
+import com.elitedesk.service.SessionManager;
 import com.elitedesk.service.SpaceService;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 import java.util.List;
 import java.util.Map;
 
 public class LoginController {
     @FXML
     private TextField nameField;
-
+    @FXML
+    private Label nameLabel;
     @FXML
     private TextField emailField;
-
     @FXML
     private PasswordField passwordField;
-
     @FXML
     private Button loginButton;
-
     @FXML
     private Button registerButton;
-
     @FXML
     private Label errorLabel;
+
+    private boolean isRegisterMode = false;
+
+    @FXML
+    private void initialize() {
+        // Set up button actions
+        loginButton.setOnAction(e -> {
+            isRegisterMode = false;
+            updateFormVisibility();
+            handleLogin();
+        });
+
+        registerButton.setOnAction(e -> {
+            isRegisterMode = true;
+            updateFormVisibility();
+            handleRegister();
+        });
+    }
+
+    private void updateFormVisibility() {
+        nameLabel.setVisible(isRegisterMode);
+        nameField.setVisible(isRegisterMode);
+        nameField.setManaged(isRegisterMode);
+        nameLabel.setManaged(isRegisterMode);
+    }
 
     @FXML
     private void handleLogin() {
@@ -47,20 +75,40 @@ public class LoginController {
 
             // Attempt login
             AuthService.login(email, password).thenAccept(response -> {
-                if (response.isSuccess()) {
-                    try {
-                        // After successful login, fetch spaces
-                        List<Map<String, Object>> spaces = SpaceService.getSpaces();
-                        showAlert(AlertType.INFORMATION, "Login Successful",
-                                "Welcome!\nFound " + spaces.size() + " spaces");
-                    } catch (Exception e) {
-                        errorLabel.setText("Error fetching spaces: " + e.getMessage());
+                Platform.runLater(() -> {
+                    if (response.isSuccess()) {
+                        // Store session details
+                        SessionManager sessionManager = SessionManager.getInstance();
+                        sessionManager.setSession(
+                                response.getData().get("token").toString(),
+                                response.getData().get("email").toString(),
+                                response.getData().get("name").toString(),
+                                response.getData().get("role").toString());
+
+                        try {
+                            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main_layout.fxml"));
+                            Parent mainLayout = loader.load();
+
+                            // Get the welcome label from the main layout
+                            Label welcomeLabel = (Label) mainLayout.lookup("#welcomeLabel");
+                            if (welcomeLabel != null) {
+                                welcomeLabel.setText("Welcome, " + sessionManager.getName() + "!");
+                            }
+
+                            Stage stage = (Stage) loginButton.getScene().getWindow();
+                            stage.setScene(new Scene(mainLayout));
+                            stage.setTitle("EliteDesk - Workspace Management");
+                        } catch (Exception e) {
+                            errorLabel.setText("Error navigating to main page: " + e.getMessage());
+                        }
+                    } else {
+                        errorLabel.setText("Login failed: " + response.getError());
                     }
-                } else {
-                    errorLabel.setText("Login failed: " + response.getError());
-                }
+                });
             }).exceptionally(throwable -> {
-                errorLabel.setText("Login failed: " + throwable.getMessage());
+                Platform.runLater(() -> {
+                    errorLabel.setText("Login failed: " + throwable.getMessage());
+                });
                 return null;
             });
         } catch (Exception e) {
@@ -85,20 +133,30 @@ public class LoginController {
 
         try {
             AuthService.register(email, password, name).thenAccept(response -> {
-                if (response.isSuccess()) {
-                    showAlert(AlertType.INFORMATION, "Registration Successful",
-                            "Account created for " + name + "\nPlease login to continue");
+                Platform.runLater(() -> {
+                    if (response.isSuccess()) {
+                        // Show success message
+                        errorLabel.setStyle("-fx-text-fill: green;");
+                        errorLabel.setText("Registration successful! Please login with your credentials.");
 
-                    // Clear the form after successful registration
-                    nameField.clear();
-                    emailField.clear();
-                    passwordField.clear();
-                    errorLabel.setText("");
-                } else {
-                    errorLabel.setText("Registration failed: " + response.getError());
-                }
+                        // Clear the form
+                        nameField.clear();
+                        emailField.clear();
+                        passwordField.clear();
+
+                        // Switch back to login mode
+                        isRegisterMode = false;
+                        updateFormVisibility();
+                    } else {
+                        errorLabel.setStyle("-fx-text-fill: red;");
+                        errorLabel.setText("Registration failed: " + response.getError());
+                    }
+                });
             }).exceptionally(throwable -> {
-                errorLabel.setText("Registration failed: " + throwable.getMessage());
+                Platform.runLater(() -> {
+                    errorLabel.setStyle("-fx-text-fill: red;");
+                    errorLabel.setText("Registration failed: " + throwable.getMessage());
+                });
                 return null;
             });
         } catch (Exception e) {
@@ -106,6 +164,7 @@ public class LoginController {
             if (errorMessage == null || errorMessage.isEmpty()) {
                 errorMessage = "Unknown error occurred";
             }
+            errorLabel.setStyle("-fx-text-fill: red;");
             errorLabel.setText("Registration failed: " + errorMessage);
         }
     }
