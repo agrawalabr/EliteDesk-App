@@ -1,9 +1,10 @@
 package com.elitedesk;
 
 public enum SpaceType {
+    CONFERENCE_ROOM,
     MEETING_ROOM,
-    WORK_AREA,
-    FOCUS_AREA,
-    TRAINING_ROOM,
-    CONFERENCE_ROOM
+    OFFICE,
+    COWORKING,
+    EVENT_SPACE,
+    STUDIO
 }

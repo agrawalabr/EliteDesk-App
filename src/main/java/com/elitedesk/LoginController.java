@@ -96,7 +96,12 @@ public class LoginController {
                             }
 
                             Stage stage = (Stage) loginButton.getScene().getWindow();
-                            stage.setScene(new Scene(mainLayout));
+                            Scene scene = new Scene(mainLayout);
+                            // Ensure the stylesheet is loaded with the latest changes
+                            scene.getStylesheets().clear();
+                            scene.getStylesheets()
+                                    .add(getClass().getResource("/styles/application.css").toExternalForm());
+                            stage.setScene(scene);
                             stage.setTitle("EliteDesk - Workspace Management");
                         } catch (Exception e) {
                             errorLabel.setText("Error navigating to main page: " + e.getMessage());

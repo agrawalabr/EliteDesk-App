@@ -1,5 +1,8 @@
 package com.elitedesk;
 
+import com.elitedesk.model.Reservation;
+import com.elitedesk.service.ReservationService;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TableView;
@@ -8,61 +11,125 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ReservedSpacesController implements Initializable {
-    @FXML
-    private TableView<ReservedSpace> reservedSpacesTable;
-    @FXML
-    private TableColumn<ReservedSpace, Number> idColumn;
-    @FXML
-    private TableColumn<ReservedSpace, String> nameColumn;
-    @FXML
-    private TableColumn<ReservedSpace, SpaceType> typeColumn;
-    @FXML
-    private TableColumn<ReservedSpace, String> locationColumn;
-    @FXML
-    private TableColumn<ReservedSpace, Number> capacityColumn;
-    @FXML
-    private TableColumn<ReservedSpace, BigDecimal> priceColumn;
-    @FXML
-    private TableColumn<ReservedSpace, LocalDateTime> reservationDateColumn;
-    @FXML
-    private TableColumn<ReservedSpace, Number> durationColumn;
+        @FXML
+        private TableView<Reservation> reservationsTable;
+        @FXML
+        private TableColumn<Reservation, String> spaceNameColumn;
+        @FXML
+        private TableColumn<Reservation, String> spaceLocationColumn;
+        @FXML
+        private TableColumn<Reservation, String> spaceTypeColumn;
+        @FXML
+        private TableColumn<Reservation, String> startTimeColumn;
+        @FXML
+        private TableColumn<Reservation, String> endTimeColumn;
+        @FXML
+        private TableColumn<Reservation, String> statusColumn;
 
-    private ObservableList<ReservedSpace> reservedSpaces = FXCollections.observableArrayList();
+        private ObservableList<Reservation> reservations = FXCollections.observableArrayList();
+        private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a");
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        // Initialize columns
-        idColumn.setCellValueFactory(cellData -> cellData.getValue().idProperty());
-        nameColumn.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
-        typeColumn.setCellValueFactory(cellData -> cellData.getValue().typeProperty());
-        locationColumn.setCellValueFactory(cellData -> cellData.getValue().locationProperty());
-        capacityColumn.setCellValueFactory(cellData -> cellData.getValue().capacityProperty());
-        priceColumn.setCellValueFactory(cellData -> cellData.getValue().pricePerHourProperty());
-        reservationDateColumn.setCellValueFactory(cellData -> cellData.getValue().reservationDateProperty());
-        durationColumn.setCellValueFactory(cellData -> cellData.getValue().durationProperty());
+        @Override
+        public void initialize(URL location, ResourceBundle resources) {
+                // Initialize columns
+                spaceNameColumn.setCellValueFactory(
+                                data -> javafx.beans.binding.Bindings
+                                                .createStringBinding(() -> data.getValue().getSpaceName()));
+                spaceLocationColumn.setCellValueFactory(
+                                data -> javafx.beans.binding.Bindings
+                                                .createStringBinding(() -> data.getValue().getSpaceLocation()));
+                spaceTypeColumn.setCellValueFactory(
+                                data -> javafx.beans.binding.Bindings
+                                                .createStringBinding(() -> data.getValue().getSpaceType()));
 
-        // Add sample data
-        reservedSpaces.addAll(
-                new ReservedSpace("Conference Room A", "1st Floor", SpaceType.CONFERENCE_ROOM, 20,
-                        new BigDecimal("50.00"), LocalDateTime.now(), 2),
-                new ReservedSpace("Meeting Room B", "1st Floor", SpaceType.MEETING_ROOM, 8,
-                        new BigDecimal("35.00"), LocalDateTime.now().plusHours(1), 1));
+                // Custom cell factories for date/time columns
+                startTimeColumn.setCellValueFactory(data -> javafx.beans.binding.Bindings
+                                .createStringBinding(() -> data.getValue().getStartTime().format(dateTimeFormatter)));
+                startTimeColumn.setCellFactory(column -> {
+                        return new javafx.scene.control.TableCell<Reservation, String>() {
+                                @Override
+                                protected void updateItem(String item, boolean empty) {
+                                        super.updateItem(item, empty);
+                                        if (item == null || empty) {
+                                                setText(null);
+                                                setStyle("");
+                                        } else {
+                                                setText(item);
+                                                setStyle("-fx-font-size: 12px; -fx-padding: 5px; -fx-background-color: #f0f8ff; -fx-border-radius: 3px; -fx-text-alignment: center; -fx-wrap-text: true;");
+                                        }
+                                }
+                        };
+                });
 
-        // Set items to the table
-        reservedSpacesTable.setItems(reservedSpaces);
-    }
+                endTimeColumn.setCellValueFactory(data -> javafx.beans.binding.Bindings
+                                .createStringBinding(() -> data.getValue().getEndTime().format(dateTimeFormatter)));
+                endTimeColumn.setCellFactory(column -> {
+                        return new javafx.scene.control.TableCell<Reservation, String>() {
+                                @Override
+                                protected void updateItem(String item, boolean empty) {
+                                        super.updateItem(item, empty);
+                                        if (item == null || empty) {
+                                                setText(null);
+                                                setStyle("");
+                                        } else {
+                                                setText(item);
+                                                setStyle("-fx-font-size: 12px; -fx-padding: 5px; -fx-background-color: #fff0f5; -fx-border-radius: 3px; -fx-text-alignment: center; -fx-wrap-text: true;");
+                                        }
+                                }
+                        };
+                });
 
-    // Method to add a new reserved space
-    public void addReservedSpace(ReservedSpace space) {
-        reservedSpaces.add(space);
-    }
+                // Status column with custom styling
+                statusColumn.setCellValueFactory(
+                                data -> javafx.beans.binding.Bindings
+                                                .createStringBinding(() -> data.getValue().getStatus()));
+                statusColumn.setCellFactory(column -> {
+                        return new javafx.scene.control.TableCell<Reservation, String>() {
+                                @Override
+                                protected void updateItem(String item, boolean empty) {
+                                        super.updateItem(item, empty);
+                                        if (item == null || empty) {
+                                                setText(null);
+                                                setStyle("");
+                                        } else {
+                                                setText(item);
+                                                if (item.equalsIgnoreCase("CONFIRMED")) {
+                                                        setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                                                } else if (item.equalsIgnoreCase("PENDING")) {
+                                                        setStyle("-fx-text-fill: orange; -fx-font-weight: bold;");
+                                                } else if (item.equalsIgnoreCase("CANCELLED")) {
+                                                        setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+                                                } else {
+                                                        setStyle("-fx-text-fill: black;");
+                                                }
+                                        }
+                                }
+                        };
+                });
 
-    // Method to remove a reserved space
-    public void removeReservedSpace(ReservedSpace space) {
-        reservedSpaces.remove(space);
-    }
+                // Set items to the table
+                reservationsTable.setItems(reservations);
+
+                // Load user reservations
+                loadUserReservations();
+        }
+
+        private void loadUserReservations() {
+                ReservationService.getUserReservations()
+                                .thenAccept(reservationList -> {
+                                        Platform.runLater(() -> {
+                                                reservations.clear();
+                                                reservations.addAll(reservationList);
+                                        });
+                                });
+        }
+
+        @FXML
+        private void handleRefresh() {
+                loadUserReservations();
+        }
 }
