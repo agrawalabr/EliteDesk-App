@@ -16,6 +16,7 @@ com/elitedesk/service/ReservationService$1.class
 com/elitedesk/SpaceBookingController$2.class
 com/elitedesk/AuthService.class
 com/elitedesk/User.class
+com/elitedesk/service/ReservationService$UserReservationsResponse.class
 com/elitedesk/model/TimeSlot.class
 com/elitedesk/ReservedSpace.class
 com/elitedesk/LoginController.class

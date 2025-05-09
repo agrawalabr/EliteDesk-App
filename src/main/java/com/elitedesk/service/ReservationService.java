@@ -137,12 +137,47 @@ public class ReservationService {
         }
     }
 
-    public static CompletableFuture<List<Reservation>> getUserReservations() {
+    public static class UserReservationsResponse {
+        private List<Reservation> upcomingReservations;
+        private List<Reservation> pastReservations;
+
+        public UserReservationsResponse() {
+            this.upcomingReservations = new ArrayList<>();
+            this.pastReservations = new ArrayList<>();
+        }
+
+        public List<Reservation> getUpcomingReservations() {
+            return upcomingReservations;
+        }
+
+        public void setUpcomingReservations(List<Reservation> upcomingReservations) {
+            this.upcomingReservations = upcomingReservations;
+        }
+
+        public List<Reservation> getPastReservations() {
+            return pastReservations;
+        }
+
+        public void setPastReservations(List<Reservation> pastReservations) {
+            this.pastReservations = pastReservations;
+        }
+
+        public List<Reservation> getAllReservations() {
+            List<Reservation> allReservations = new ArrayList<>();
+            allReservations.addAll(upcomingReservations);
+            allReservations.addAll(pastReservations);
+            return allReservations;
+        }
+    }
+
+    public static CompletableFuture<UserReservationsResponse> getUserReservations() {
         try {
+            String url = AppConfig.API_BASE_URL + "/reservations/user/email/" +
+                    SessionManager.getInstance().getEmail() + "/categorized";
+            System.out.println("Fetching user reservations from: " + url);
+
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(
-                            AppConfig.API_BASE_URL + "/reservations/user/email/"
-                                    + SessionManager.getInstance().getEmail()))
+                    .uri(URI.create(url))
                     .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                     .GET()
                     .build();
@@ -150,34 +185,118 @@ public class ReservationService {
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
                         try {
+                            System.out.println("Reservations API Response Status: " + response.statusCode());
+                            System.out.println("Reservations API Response Body: " + response.body());
+
                             if (response.statusCode() == 200) {
                                 Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
-                                List<Map<String, Object>> reservationsData = (List<Map<String, Object>>) responseMap
-                                        .get("data");
+                                UserReservationsResponse result = new UserReservationsResponse();
 
-                                return reservationsData.stream()
-                                        .map(data -> new Reservation(
-                                                ((Number) data.get("id")).longValue(),
-                                                ((Number) data.get("spaceId")).longValue(),
-                                                ((Number) data.get("userId")).toString(),
-                                                (String) data.get("userName"),
-                                                (String) data.get("spaceName"),
-                                                (String) data.get("spaceLocation"),
-                                                (String) data.get("spaceType"),
-                                                LocalDateTime.parse((String) data.get("startTime"), formatter),
-                                                LocalDateTime.parse((String) data.get("endTime"), formatter),
-                                                (String) data.get("status")))
-                                        .collect(Collectors.toList());
+                                if (responseMap.containsKey("data")) {
+                                    Map<String, Object> data = (Map<String, Object>) responseMap.get("data");
+
+                                    // Process upcoming reservations
+                                    if (data.containsKey("upcomingReservations")) {
+                                        List<Map<String, Object>> upcomingData = (List<Map<String, Object>>) data
+                                                .get("upcomingReservations");
+                                        List<Reservation> upcomingReservations = upcomingData.stream()
+                                                .map(reservationData -> mapToReservation(reservationData))
+                                                .collect(Collectors.toList());
+                                        result.setUpcomingReservations(upcomingReservations);
+                                        System.out.println(
+                                                "Loaded " + upcomingReservations.size() + " upcoming reservations");
+                                    }
+
+                                    // Process past reservations
+                                    if (data.containsKey("pastReservations")) {
+                                        List<Map<String, Object>> pastData = (List<Map<String, Object>>) data
+                                                .get("pastReservations");
+                                        List<Reservation> pastReservations = pastData.stream()
+                                                .map(reservationData -> mapToReservation(reservationData))
+                                                .collect(Collectors.toList());
+                                        result.setPastReservations(pastReservations);
+                                        System.out.println("Loaded " + pastReservations.size() + " past reservations");
+                                    }
+                                }
+                                return result;
                             }
-                            return List.of();
+                            System.err.println("API error: " + response.statusCode() + " - " + response.body());
+                            return new UserReservationsResponse();
                         } catch (Exception e) {
+                            System.err.println("Error processing reservations: " + e.getMessage());
                             e.printStackTrace();
-                            return List.of();
+                            return new UserReservationsResponse();
                         }
+                    })
+                    .exceptionally(throwable -> {
+                        System.err.println("Error fetching reservations: " + throwable.getMessage());
+                        throwable.printStackTrace();
+                        return new UserReservationsResponse();
                     });
         } catch (Exception e) {
+            System.err.println("Error creating reservations request: " + e.getMessage());
             e.printStackTrace();
-            return CompletableFuture.completedFuture(List.of());
+            return CompletableFuture.completedFuture(new UserReservationsResponse());
+        }
+    }
+
+    // Helper method to map API response to Reservation object
+    private static Reservation mapToReservation(Map<String, Object> data) {
+        return new Reservation(
+                ((Number) data.get("id")).longValue(),
+                ((Number) data.get("spaceId")).longValue(),
+                ((Number) data.get("userId")).toString(),
+                (String) data.get("userName"),
+                (String) data.get("spaceName"),
+                (String) data.get("spaceLocation"),
+                (String) data.get("spaceType"),
+                LocalDateTime.parse((String) data.get("startTime"), formatter),
+                LocalDateTime.parse((String) data.get("endTime"), formatter),
+                (String) data.get("status"));
+    }
+
+    // For backward compatibility, keep a method that returns just a combined list
+    public static CompletableFuture<List<Reservation>> getAllUserReservations() {
+        return getUserReservations().thenApply(UserReservationsResponse::getAllReservations);
+    }
+
+    /**
+     * Cancels a reservation by ID
+     * 
+     * @param reservationId the id of the reservation to cancel
+     * @return a CompletableFuture with a boolean indicating success or failure
+     */
+    public static CompletableFuture<Boolean> cancelReservation(long reservationId) {
+        try {
+            String userEmail = SessionManager.getInstance().getEmail();
+            System.out.println("Cancelling reservation with ID: " + reservationId + " for user: " + userEmail);
+
+            String url = String.format("%s/reservations/%d/cancel?userEmail=%s",
+                    AppConfig.API_BASE_URL, reservationId, userEmail);
+            System.out.println("Cancel URL: " + url);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(response -> {
+                        System.out.println("Cancel reservation API Response Status: " + response.statusCode());
+                        System.out.println("Cancel reservation API Response Body: " + response.body());
+                        return response.statusCode() == 200 || response.statusCode() == 201;
+                    })
+                    .exceptionally(throwable -> {
+                        System.err.println("Error canceling reservation: " + throwable.getMessage());
+                        throwable.printStackTrace();
+                        return false;
+                    });
+        } catch (Exception e) {
+            System.err.println("Error creating cancel reservation request: " + e.getMessage());
+            e.printStackTrace();
+            return CompletableFuture.completedFuture(false);
         }
     }
 
