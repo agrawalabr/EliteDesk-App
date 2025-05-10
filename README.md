@@ -1,6 +1,4 @@
-# 🏢 EliteDesk - Modern Workspace Management System
-
----
+# 🏢 EliteDesk - Modern Workspace Management System 
 
 <div align="center">
 
