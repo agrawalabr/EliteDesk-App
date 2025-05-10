@@ -1,6 +1,6 @@
-# 🏢 EliteDesk - Modern Workspace Management System 
+# 🏢 EliteDesk - Modern Workspace Management System (Frontend)
 
-<div align="center">
+<div align="left">
 
 ![Java](https://img.shields.io/badge/Java-17-orange) ![JavaFX](https://img.shields.io/badge/JavaFX-17-blue) ![Status](https://img.shields.io/badge/Status-Developed-brightgreen)
 
@@ -181,14 +181,6 @@ The application can be configured through [`AppConfig.java`](src/main/java/com/e
 - [ ] Integration with calendar services
 - [ ] Payment gateway integration
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
 
 ## 👥 Authors
 
@@ -202,3 +194,7 @@ The application can be configured through [`AppConfig.java`](src/main/java/com/e
 - Contributions from the open-source community
 
 ---
+
+<div align="center">
+Made with ❤️ by EliteDesk Team
+</div>
